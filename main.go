@@ -2,19 +2,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
-)
-
-var (
-	inputFlag    *string
-	outputFlag   *string
-	languageFlag *string
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 func main() {
-	inputFlag = flag.String("I", "", "Input file or directory")
-	outputFlag = flag.String("O", "", "Output file")
-	languageFlag = flag.String("L", "eng", "Tesseract language")
+	inputFlag := flag.String("i", "", "Input file or directory")
+	outputFlag := flag.String("o", "", "Output file")
+	languageFlag := flag.String("l", "eng", "Tesseract OCR language")
 	flag.Parse()
 
 	if *inputFlag == "" || *outputFlag == "" {
@@ -22,7 +21,7 @@ func main() {
 		return
 	}
 
-	output, exception := os.OpenFile(*outputFlag, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0755)
+	output, exception := os.OpenFile(*outputFlag, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	handle(exception)
 
 	defer output.Close()
@@ -32,14 +31,45 @@ func main() {
 
 	inputMode := input.Mode()
 	if inputMode.IsRegular() {
-		convertFileToText(*inputFlag, output)
+		temporaryFile := "/tmp/go-tesseract-" + filepath.Base(*inputFlag)
+		tesseract(*inputFlag, temporaryFile, *languageFlag)
+		write(filepath.Base(*inputFlag), output, temporaryFile)
+
+		fmt.Println("Done!")
 		return
 	}
+
+	directory := strings.TrimPrefix(*inputFlag, "/")
 
 	inputs, exception := os.ReadDir(*inputFlag)
 	handle(exception)
 
 	for _, v := range inputs {
-		convertDirectoryFileToText(*inputFlag, v.Name(), output)
+		temporaryFile := "/tmp/go-tesseract-" + v.Name()
+		tesseract(directory+"/"+v.Name(), temporaryFile, *languageFlag)
+		write(v.Name(), output, temporaryFile)
 	}
+
+	fmt.Println("Done!")
+}
+
+func tesseract(i string, o string, l string) {
+	command := exec.Command("tesseract", "-l", l, i, o)
+	exception := command.Start()
+	handle(exception)
+}
+
+func write(i string, o *os.File, t string) {
+	data, exception := os.ReadFile(t + ".txt")
+	handle(exception)
+
+	regex, exception := regexp.Compile(`\s+|\n+`)
+	handle(exception)
+
+	o.WriteString("=== Start " + i + " file ===\n")
+	o.WriteString(strings.ToLower(regex.ReplaceAllString(string(data), " ")))
+	o.WriteString("\n=== End " + i + " file ===\n\n")
+
+	os.Remove(t + ".txt")
+	fmt.Println(i, "converted")
 }
