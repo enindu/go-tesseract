@@ -13,7 +13,7 @@ import (
 func main() {
 	inputFlag := flag.String("i", "", "Input file or directory")
 	outputFlag := flag.String("o", "", "Output file")
-	languageFlag := flag.String("l", "eng", "Tesseract OCR language")
+	languageFlag := flag.String("l", "eng", "Tesseract OCR language(s)")
 	flag.Parse()
 
 	if *inputFlag == "" || *outputFlag == "" {
