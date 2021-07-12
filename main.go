@@ -67,7 +67,7 @@ func write(i string, o *os.File, t string) {
 	handle(exception)
 
 	o.WriteString("=== Start " + i + " file ===\n")
-	o.WriteString(strings.ToLower(regex.ReplaceAllString(string(data), " ")))
+	o.WriteString(regex.ReplaceAllString(string(data), " "))
 	o.WriteString("\n=== End " + i + " file ===\n\n")
 
 	os.Remove(t + ".txt")
