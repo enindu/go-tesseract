@@ -55,7 +55,7 @@ func main() {
 
 func tesseract(i string, o string, l string) {
 	command := exec.Command("tesseract", "-l", l, i, o)
-	exception := command.Start()
+	exception := command.Run()
 	handle(exception)
 }
 
